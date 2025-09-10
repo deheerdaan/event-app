@@ -1,26 +1,31 @@
 import { Box, Input } from "@chakra-ui/react";
+import React from "react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-const CustomInput = ({ value, onClick, placeholder, ...props }) => (
-  <Input
-    value={value}
-    onClick={onClick}
-    placeholder={placeholder}
-    readOnly
-    cursor="pointer"
-    fontSize={{ base: "sm", md: "md" }}
-    borderColor="gray.300"
-    _hover={{
-      borderColor: "gray.400",
-    }}
-    _focus={{
-      borderColor: "gray.600",
-      boxShadow: "0 0 0 1px gray.600",
-    }}
-    {...props}
-  />
+const CustomInput = React.forwardRef(
+  ({ value, onClick, placeholder, ...props }, ref) => (
+    <Input
+      ref={ref}
+      value={value}
+      onClick={onClick}
+      placeholder={placeholder}
+      readOnly
+      cursor="pointer"
+      fontSize={{ base: "sm", md: "md" }}
+      borderColor="gray.300"
+      _hover={{
+        borderColor: "gray.400",
+      }}
+      _focus={{
+        borderColor: "gray.600",
+        boxShadow: "0 0 0 1px gray.600",
+      }}
+      {...props}
+    />
+  )
 );
+CustomInput.displayName = "CustomInput";
 
 export const DateTimePicker = ({
   value,
