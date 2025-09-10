@@ -117,7 +117,7 @@ export const UserSelectionStep = ({
         name: newUserData.name.trim(),
         image:
           newUserData.image.trim() ||
-          "https://via.placeholder.com/150/CCCCCC/FFFFFF?text=User",
+          "https://placehold.co/150x150/CCCCCC/FFFFFF?text=User",
       };
 
       onTempUserCreate(newUser);
