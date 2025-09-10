@@ -1,82 +1,72 @@
-import { Box, Grid, GridItem, Heading } from "@chakra-ui/react";
-import { useEffect } from "react";
-import { EventCard } from "../components/event/EventCard";
-import useFetchCategories from "../hooks/useFetchCategories";
-import useFetchEvents from "../hooks/useFetchEvents";
+import { useEffect, useMemo } from "react";
+import { useOutletContext, useSearchParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
-import { useSetAtom } from "jotai";
-import { useNavigate } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
-import { eventAtom } from "../atoms";
+import { EventsGrid } from "../components/event/EventsGrid";
+import { LoadingSpinner } from "../components/ui/LoadingSpinner";
+import { useGlobalCategories, useGlobalEvents } from "../context/DataContext";
+import { mapEventsWithCategories } from "../utils/categoryUtils";
 
 export const EventsPage = () => {
-  const { events, eventsError } = useFetchEvents();
-  const { categories, categoriesError } = useFetchCategories();
+  const [searchParams] = useSearchParams();
+  const { searchQuery } = useOutletContext();
+  const categoryFilter = useMemo(() => {
+    return searchParams.get("categories")?.split(",").filter(Boolean) || [];
+  }, [searchParams]);
 
-  const navigate = useNavigate();
+  const {
+    events,
+    isLoading: eventsLoading,
+    error: eventsError,
+  } = useGlobalEvents();
 
-  const setEvent = useSetAtom(eventAtom);
+  const {
+    categories,
+    isLoading: categoriesLoading,
+    error: categoriesError,
+  } = useGlobalCategories();
+
+  const eventsWithCategories = useMemo(() => {
+    if (eventsLoading || categoriesLoading) {
+      return events?.map((event) => ({ ...event, categories: [] })) || [];
+    }
+    return mapEventsWithCategories(events, categories);
+  }, [events, categories, eventsLoading, categoriesLoading]);
+
+  const filteredEvents = useMemo(() => {
+    let filtered = eventsWithCategories;
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((event) =>
+        event.title?.toLowerCase().includes(query)
+      );
+    }
+
+    if (categoryFilter.length > 0) {
+      const numericCategoryFilter = categoryFilter.map((id) => Number(id));
+      filtered = filtered.filter((event) =>
+        event.categoryIds?.some((categoryId) =>
+          numericCategoryFilter.includes(Number(categoryId))
+        )
+      );
+    }
+
+    return filtered;
+  }, [eventsWithCategories, searchQuery, categoryFilter]);
+
+  const isLoading = categoriesLoading || eventsLoading;
+  const hasError = eventsError || categoriesError;
 
   useEffect(() => {
-    if (eventsError) {
-      toast.error(`Error: ${eventsError.message}`);
+    if (hasError) {
+      toast.error("Error loading data. Please try again.");
     }
-    if (categoriesError) {
-      toast.error(`Error: ${categoriesError.message}`);
-    }
-  }, [eventsError, categoriesError]);
+  }, [hasError]);
 
-  const getCategoryNames = (categoryIds) => {
-    const categoryNames = categoryIds.map((id) => {
-      const category = categories.find(
-        (category) => category.id === String(id)
-      );
-      const name = category ? category.name : undefined;
-      return name;
-    });
-    return categoryNames;
-  };
+  if (isLoading && !hasError) {
+    return <LoadingSpinner message="Loading events..." />;
+  }
 
-  return (
-    <>
-      <ToastContainer />
-      <Heading>Event</Heading>
-      <Box justifyItems={"center"} p={4}>
-        <Grid
-          border={"2px solid green"}
-          justifyItems={"center"}
-          gap={4}
-          templateColumns={{
-            base: "1fr",
-            md: "repeat(2, 1fr)",
-            lg: "repeat(3, 1fr)",
-            xl: "repeat(4, 1fr)",
-          }}
-          maxWidth={"100%"}
-          width="100%"
-        >
-          {events.map((event) => (
-            <GridItem key={event.id}>
-              <EventCard
-                event={event}
-                onClick={() => {
-                  setEvent(event);
-                  navigate(`/event/${event.id}`);
-                }}
-                categories={getCategoryNames(event.categoryIds)}
-              />
-            </GridItem>
-          ))}
-        </Grid>
-      </Box>
-    </>
-  );
+  return <EventsGrid events={filteredEvents} categories={categories} />;
 };
-
-// also use fetchcategories here maybe
-//usememo to make it quicker
-
-//fetch result in atom and in dependency array plaatsen
-
-// use steps to create the new event
-// include animations

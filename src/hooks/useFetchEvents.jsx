@@ -1,24 +1,14 @@
-import { useState, useEffect } from "react";
+import { useFetch } from "./useFetch";
 
-const useFetchEvents = () => {
-  const [events, setEvents] = useState([]);
-  const [error, setError] = useState(null);
+export const useFetchEvents = () => {
+  const {
+    data: events,
+    isLoading,
+    error,
+    retry,
+  } = useFetch("/events", {
+    initialValue: [],
+  });
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const response = await fetch("http://localhost:3000/events");
-        const eventsData = await response.json();
-        setEvents(eventsData);
-      } catch (error) {
-        setError(error);
-        console.error("Error fetching events:", error);
-      }
-    };
-    fetchEvents();
-  }, []);
-
-  return { events, error };
+  return { events, isLoading, error, retry };
 };
-
-export default useFetchEvents;
